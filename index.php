@@ -31,113 +31,161 @@ $sql = "SELECT * FROM LED_status;";
 $result   = mysqli_query($conn, $sql);
 $row  = mysqli_fetch_assoc($result);	
 
+// Simular datos de temperatura y humedad que cambian cada vez que recargas la página, se debe cambiar
+// por las que proporciona la ESP32
+$temperature = rand(20, 30);
+$humidity = rand(40, 60);
+
+// Definir la ruta de las imágenes de la planta
+$plantImageHot = "./images/planta-con-agua.jpg";
+$plantImageNormal = "./images/planta-sin-agua.jpg";
+
 ?>
 
-<style>
-	.wrapper{
-		width: 100%;
-		padding-top: 50px;
-	}
-	.col_3{
-		width: 33.3333333%;
-		float: left;
-		min-height: 1px;
-	}
-	#submit_button{
-		background-color: #2bbaff; 
-		color: #FFF; 
-		font-weight: bold; 
-		font-size: 40; 
-		border-radius: 15px;
-    	text-align: center;
-	}
-	.led_img{
-		height: 400px;		
-		width: 100%;
-		object-fit: cover;
-		object-position: center;
-	}
-	
-	@media only screen and (max-width: 600px) {
-		.col_3 {
-			width: 100%;
-		}
-		.wrapper{
-			width: 100%;
-			padding-top: 5px;
-		}
-		.led_img{
-			height: 300px;		
-			width: 80%;
-			margin-right: 10%;
-			margin-left: 10%;
-			object-fit: cover;
-			object-position: center;
-		}
-	}
 
-</style>
-
-
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js" type="text/javascript"></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FCOERI ASSR</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-	<div class="wrapper" id="refresh">
-		<div class="col_3">
-		</div>
 
-		<div class="col_3" >
-			
-			<?php echo '<h1 style="text-align: center;">The status of the LED is: '.$row['status'].'</h1>';?>
-			
-			<div class="col_3">
-			</div>
-			
-			<div class="col_3" style="text-align: center;">
-			<form action="index.php" method="post" id="LED" enctype="multipart/form-data">			
-				<input id="submit_button" type="submit" name="toggle_LED" value="Toggle LED" />
-			</form>
-				
-			<script type="text/javascript">
-			$(document).ready (function () {
-				var updater = setTimeout (function () {
-					$('div#refresh').load ('index.php', 'update=true');
-				}, 1000);
-			});
-			</script>
-			<br>
-			<br>
-			<?php
-				if($row['status'] == 0){?>
-				<div class="led_img">
-					<img id="contest_img" src="led_off.png" width="100%" height="100%">
-				</div>
-			<?php	
-				}
-				else{ ?>
-				<div class="led_img">
-					<img id="contest_img" src="led_on.png" width="100%" height="100%">
-				</div>
-			<?php
-				}
-			?>
-			
-				
-				
-				
-			</div>
-				
-			<div class="col_3">
-			</div>
-		</div>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+        <img src="./images/logo.png" width="30" height="30" class="d-inline-block align-top" alt="">
+        Proyecto de Gestión del Riego
+    </a>
+    <ul class="navbar-nav ml-auto d-flex align-items-center">
+        <li class="nav-item">
+            <img src="./profile_picture.png" width="30" height="30" class="rounded-circle" alt="Foto de Perfil">
+        </li>
+        <li class="nav-item ml-2">
+            <span class="navbar-text mr-2">Usuario</span>
+        </li>
+    </ul>
+</nav>
 
-		<div class="col_3">
-		</div>
-	</div>
+<!-- Contenedor Principal -->
+<div class="container mt-4">
+
+    <!-- Filas y Columnas para Gráficas e Información -->
+    <div class="row">
+
+        <!-- Columna para Gráficas -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="temperature-chart" width="400" height="200"></canvas>
+                    <canvas id="humidity-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna para Información de Variables y Planta -->
+        <div class="col-md-4">
+            <div class="card">
+				<?php
+                // Condicional para seleccionar la imagen de la planta
+                $plantImage = ($temperature > 25) ? $plantImageHot : $plantImageNormal;
+                ?>
+                <img src="<?= $plantImage ?>" class="card-img-top" alt="Imagen de Planta">
+                <div class="card-body">
+                    <h5 class="card-title">Variables del Suelo</h5>
+                    <p class="card-text">Temperatura: <span id="temperature"><?= $temperature ?></span> °C</p>
+                    <p class="card-text">Humedad: <span id="humidity"><?= $humidity ?></span>%</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        var temperatureChart = new Chart($('#temperature-chart')[0].getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: [{
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }]
+                }
+            }
+        });
+
+        var humidityChart = new Chart($('#humidity-chart')[0].getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humedad (%)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: [{
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }]
+                }
+            }
+        });
+
+        setInterval(function () {
+
+			//Aqui se pone las nuevas variables que se van actualizando
+            var newTemperature = Math.floor(Math.random() * (30 - 20 + 1)) + 20;
+            var newHumidity = Math.floor(Math.random() * (60 - 40 + 1)) + 40;
+
+            $('#temperature').text(newTemperature);
+            $('#humidity').text(newHumidity);
+
+            temperatureChart.config.data.labels.push(new Date().toLocaleTimeString());
+            temperatureChart.config.data.datasets[0].data.push(newTemperature);
+
+            humidityChart.config.data.labels.push(new Date().toLocaleTimeString());
+            humidityChart.config.data.datasets[0].data.push(newHumidity);
+
+            if (temperatureChart.config.data.labels.length > 10) {
+                temperatureChart.config.data.labels.shift();
+                temperatureChart.config.data.datasets[0].data.shift();
+            }
+
+            if (humidityChart.config.data.labels.length > 10) {
+                humidityChart.config.data.labels.shift();
+                humidityChart.config.data.datasets[0].data.shift();
+            }
+
+            temperatureChart.update();
+            humidityChart.update();
+        }, 5000);
+    </script>
+</div>
 </body>
-</html>
-
 </html>
