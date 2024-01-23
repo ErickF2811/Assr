@@ -14,7 +14,7 @@ if (!$conn) {
 
 if (isset($_POST['toggle_LED'])) {
 	$sql = "SELECT * FROM LED_status;";
-	$result   = mysqli_query($conn, $sql);
+	$result = mysqli_query($conn, $sql);
 	$row  = mysqli_fetch_assoc($result);
 	
 	if($row['status'] == 0){
@@ -28,13 +28,14 @@ if (isset($_POST['toggle_LED'])) {
 
 
 $sql = "SELECT * FROM LED_status;";
+
 $result   = mysqli_query($conn, $sql);
 $row  = mysqli_fetch_assoc($result);	
 
 // Simular datos de temperatura y humedad que cambian cada vez que recargas la página, se debe cambiar
 // por las que proporciona la ESP32
-$temperature = rand(20, 30);
-$humidity = rand(40, 60);
+$temperature =  $row['temperatura'];
+$humidity = $row['humedad'];
 
 // Definir la ruta de las imágenes de la planta
 $plantImageHot = "./images/planta-con-agua.jpg";
@@ -52,6 +53,7 @@ $plantImageNormal = "./images/planta-sin-agua.jpg";
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
@@ -92,14 +94,31 @@ $plantImageNormal = "./images/planta-sin-agua.jpg";
             <div class="card">
 				<?php
                 // Condicional para seleccionar la imagen de la planta
-                $plantImage = ($temperature > 25) ? $plantImageHot : $plantImageNormal;
+                $apagado = "Automatico apagada";
+                $enc = "Atutomatico encendida";
+                $plantImage = (($temperature > 25) and ($row['status'] == 1)) ? $plantImageHot : $plantImageNormal;
+                $estado = (($temperature > 25) and ($row['status'] == 1)) ? $enc : $apagado;
                 ?>
+                
                 <img src="<?= $plantImage ?>" class="card-img-top" alt="Imagen de Planta">
                 <div class="card-body">
                     <h5 class="card-title">Variables del Suelo</h5>
                     <p class="card-text">Temperatura: <span id="temperature"><?= $temperature ?></span> °C</p>
                     <p class="card-text">Humedad: <span id="humidity"><?= $humidity ?></span>%</p>
+                    <p class="card-text">El estado del riego esta: <span id="humidity"><?= $estado ?></span></p>
                 </div>
+                
+    			<form action="index.php" method="post" id="LED" enctype="multipart/form-data">			
+    				<input id="submit_button" type="submit" name="toggle_LED" value="Toggle LED" />
+    			</form>
+    				
+    			<script type="text/javascript">
+    			$(document).ready (function () {
+    				var updater = setTimeout (function () {
+    					$('div#refresh').load ('index.php', 'update=true');
+    				}, 1000);
+    			});
+    			</script>
             </div>
         </div>
 
@@ -158,10 +177,30 @@ $plantImageNormal = "./images/planta-sin-agua.jpg";
         });
 
         setInterval(function () {
+            
+            $servername = "localhost";
+            $dBUsername = "id21765246_assr";
+            $dBPassword = "Assr$123456";
+            $dBName = "id21765246_assr";
+            
+            $conn = mysqli_connect($servername, $dBUsername, $dBPassword, $dBName);
+           
+            if (!$conn) {
+            	die("Connection failed: ".mysqli_connect_error());
+            }
+            $sql = "SELECT * FROM LED_status;";
+                
+            $result   = mysqli_query($conn, $sql);
+            $row  = mysqli_fetch_assoc($result);	
+            
+            // Simular datos de temperatura y humedad que cambian cada vez que recargas la página, se debe cambiar
+            // por las que proporciona la ESP32
+            $temperature =  $row['temperatura'];
+            $humidity = $row['humedad'];
 
 			//Aqui se pone las nuevas variables que se van actualizando
-            var newTemperature = Math.floor(Math.random() * (30 - 20 + 1)) + 20;
-            var newHumidity = Math.floor(Math.random() * (60 - 40 + 1)) + 40;
+            var newTemperature = $temperature;
+            var newHumidity =$humidity;
 
             $('#temperature').text(newTemperature);
             $('#humidity').text(newHumidity);

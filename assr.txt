@@ -1,0 +1,118 @@
+<!-- Contenedor Principal -->
+<div class="container mt-4">
+
+    <!-- Filas y Columnas para Gráficas e Información -->
+    <div class="row">
+
+        <!-- Columna para Gráficas -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="temperature-chart" width="400" height="200"></canvas>
+                    <canvas id="humidity-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna para Información de Variables y Planta -->
+        <div class="col-md-4">
+            <div class="card">
+				<?php
+                // Condicional para seleccionar la imagen de la planta
+                $plantImage = ($temperature > 25) ? $plantImageHot : $plantImageNormal;
+                ?>
+                <img src="<?= $plantImage ?>" class="card-img-top" alt="Imagen de Planta">
+                <div class="card-body">
+                    <h5 class="card-title">Variables del Suelo</h5>
+                    <p class="card-text">Temperatura: <span id="temperature"><?= $temperature ?></span> °C</p>
+                    <p class="card-text">Humedad: <span id="humidity"><?= $humidity ?></span>%</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        var temperatureChart = new Chart($('#temperature-chart')[0].getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: [{
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }]
+                }
+            }
+        });
+
+        var humidityChart = new Chart($('#humidity-chart')[0].getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humedad (%)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: [{
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }]
+                }
+            }
+        });
+
+        setInterval(function () {
+
+			//Aqui se pone las nuevas variables que se van actualizando
+            var newTemperature = Math.floor(Math.random() * (30 - 20 + 1)) + 20;
+            var newHumidity = Math.floor(Math.random() * (60 - 40 + 1)) + 40;
+
+            $('#temperature').text(newTemperature);
+            $('#humidity').text(newHumidity);
+
+            temperatureChart.config.data.labels.push(new Date().toLocaleTimeString());
+            temperatureChart.config.data.datasets[0].data.push(newTemperature);
+
+            humidityChart.config.data.labels.push(new Date().toLocaleTimeString());
+            humidityChart.config.data.datasets[0].data.push(newHumidity);
+
+            if (temperatureChart.config.data.labels.length > 10) {
+                temperatureChart.config.data.labels.shift();
+                temperatureChart.config.data.datasets[0].data.shift();
+            }
+
+            if (humidityChart.config.data.labels.length > 10) {
+                humidityChart.config.data.labels.shift();
+                humidityChart.config.data.datasets[0].data.shift();
+            }
+
+            temperatureChart.update();
+            humidityChart.update();
+        }, 5000);
+    </script>
+</div>
+</body>
+</html>
